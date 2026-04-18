@@ -1,0 +1,45 @@
+---
+import '../styles/global.css';
+import { SITE, NAV } from '../config';
+
+export interface Props {
+  title?: string;
+  description?: string;
+  activeNav?: string;
+}
+
+const { title, description, activeNav } = Astro.props;
+const pageTitle = title ? `${title} · ${SITE.title}` : SITE.title;
+const pageDesc = description ?? SITE.description;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={pageDesc} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/rss.xml" />
+    <title>{pageTitle}</title>
+  </head>
+  <body>
+    <nav class="nav-top">
+      {NAV.map((item, i) => (
+        <>
+          <a href={item.href} class={activeNav === item.name ? 'active' : ''}>{item.name}</a>
+          {i < NAV.length - 1 && <span class="sep">·</span>}
+        </>
+      ))}
+    </nav>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-foot">
+      made by a human, <span class="heart">♡</span> in {SITE.city}
+    </footer>
+  </body>
+</html>

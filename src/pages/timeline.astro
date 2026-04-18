@@ -1,0 +1,412 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { pastEvents, futureEvents, youAreHere, tailMessage, type TimelineEventType } from '../data/timeline';
+
+// 按年+月分组
+type Group = { year: number; month: number; events: typeof pastEvents };
+const groups: Group[] = [];
+pastEvents.forEach(ev => {
+  const d = new Date(ev.date);
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  const g = groups.find(x => x.year === year && x.month === month);
+  if (g) g.events.push(ev);
+  else groups.push({ year, month, events: [ev] });
+});
+
+// 年份导航
+const years = [...new Set(groups.map(g => g.year))].sort((a, b) => b - a);
+
+const zhNum = ['零','一','二','三','四','五','六','七','八','九','十','十一','十二'];
+function zhMonth(m: number) { return zhNum[m] + '月'; }
+
+function zhDay(n: number): string {
+  if (n <= 10) return zhNum[n] + '日';
+  if (n < 20) return '十' + (n === 10 ? '' : zhNum[n - 10]) + '日';
+  if (n === 20) return '二十日';
+  if (n < 30) return '二十' + zhNum[n - 20] + '日';
+  if (n === 30) return '三十日';
+  return '三十一日';
+}
+function zhDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return zhMonth(d.getMonth() + 1) + zhDay(d.getDate());
+}
+
+function symbolFor(type: TimelineEventType): string {
+  switch(type) {
+    case 'read': return '●';
+    case 'done': return '✓';
+    case 'aha': return '✦';
+    case 'start': return '◇';
+    case 'book': return '○';
+  }
+}
+---
+
+<BaseLayout title="Timeline" activeNav="timeline">
+  <div class="tl">
+    <header class="head fade-up d1">
+      <div class="kicker">从我开始的那天起</div>
+      <h1 class="title">我的<em>学习</em>轨迹</h1>
+      <p class="sub">这里不是一份简历，也不是成就墙。<br/>只是一条诚实的路径，记录我走过的和正在走的。</p>
+    </header>
+
+    <div class="legend fade-up d2">
+      <span class="legend-item"><span class="sym read">●</span>读论文</span>
+      <span class="legend-item"><span class="sym done">✓</span>做完项目</span>
+      <span class="legend-item"><span class="sym aha">✦</span>顿悟时刻</span>
+      <span class="legend-item"><span class="sym start">◇</span>开始学</span>
+      <span class="legend-item"><span class="sym book">○</span>读完一本书</span>
+    </div>
+
+    <!-- 右侧年份导航 -->
+    {years.length > 1 && (
+      <nav class="years" id="years-nav">
+        {years.map(y => (
+          <a data-year={y}>{y}</a>
+        ))}
+      </nav>
+    )}
+
+    <div class="axis fade-up d3">
+      {groups.map(g => (
+        <>
+          <div class="month" id={`year-${g.year}`} data-year={g.year}>
+            <b>{g.year}</b> · {zhMonth(g.month)}
+          </div>
+          {g.events.map(ev => (
+            <div class={`event ${ev.type}`} data-has-detail={ev.detail ? 'true' : 'false'}>
+              <span class={`ev-node sym-${ev.type}`}>{symbolFor(ev.type)}</span>
+              <div class="ev-date">{zhDate(ev.date)}</div>
+              <div class="ev-title" set:html={ev.title} />
+              {ev.detail && (
+                <div class="ev-expand">
+                  {ev.detail}
+                  {ev.link && <><br/><a class="ev-link" href={ev.link}>→ 相关写作</a></>}
+                </div>
+              )}
+            </div>
+          ))}
+        </>
+      ))}
+
+      <!-- 你在这里 -->
+      <div class="now-anchor">
+        <div class="now-label">{youAreHere.label}</div>
+        <div class="now-text">{youAreHere.text}</div>
+        <div class="now-arrow">{youAreHere.arrow}</div>
+      </div>
+
+      <!-- 未来 -->
+      <div class="future-label">计划中的 · <b>soon-ish</b></div>
+      <div class="future">
+        {futureEvents.map(ev => (
+          <div class="event future-event">
+            <span class="ev-node">{symbolFor(ev.type)}</span>
+            <div class="ev-date">{ev.when}</div>
+            <div class="ev-title" set:html={ev.title} />
+          </div>
+        ))}
+      </div>
+
+      <div class="tail">{tailMessage}</div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .tl {
+    max-width: 620px; margin: 0 auto;
+    padding: 0 1rem; color: var(--text-primary);
+    position: relative; font-family: var(--font-sans);
+  }
+
+  .head { text-align: center; margin-bottom: 3rem; }
+  .kicker {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 13px; color: var(--text-tertiary);
+    margin-bottom: 12px;
+  }
+  .title {
+    font-size: 30px; line-height: 1.25;
+    margin: 0 0 14px; font-weight: 500;
+    letter-spacing: -0.025em;
+  }
+  .title :global(em) {
+    font-family: var(--font-serif); font-style: italic; font-weight: 400;
+  }
+  .sub {
+    font-size: 14px; line-height: 1.75;
+    color: var(--text-secondary);
+    max-width: 400px; margin: 0 auto;
+    font-family: var(--font-serif); font-style: italic;
+  }
+
+  .legend {
+    display: flex; justify-content: center; gap: 18px;
+    padding: 14px 0 10px; margin-bottom: 1.5rem;
+    border-top: 0.5px dashed var(--border-light);
+    border-bottom: 0.5px dashed var(--border-light);
+    font-size: 11.5px; color: var(--text-tertiary);
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .sym { width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; }
+  .sym.read { color: var(--c-read); }
+  .sym.done { color: var(--c-done); }
+  .sym.aha { color: var(--c-aha); }
+  .sym.start { color: var(--c-start); }
+  .sym.book { color: var(--c-book); }
+
+  /* 右侧年份导航 */
+  .years {
+    position: fixed;
+    right: max(12px, calc(50% - 400px));
+    top: 200px;
+    display: flex; flex-direction: column; gap: 14px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+    width: 50px;
+    display: none;
+  }
+  @media (min-width: 900px) {
+    .years { display: flex; }
+  }
+  .years a {
+    cursor: pointer; padding: 3px 0; text-align: right;
+    transition: color 0.2s, padding 0.2s, letter-spacing 0.3s;
+    border-right: 1.5px solid var(--border-light);
+    padding-right: 10px;
+  }
+  .years a:hover { color: var(--text-primary); letter-spacing: 0.1em; }
+  .years a.current { color: var(--brand); border-right-color: var(--brand); font-weight: 500; }
+
+  .axis {
+    position: relative;
+    padding: 0 0 0 40px;
+    margin-left: 20px;
+  }
+  .axis::before {
+    content: '';
+    position: absolute; left: 7px; top: 0; bottom: 0;
+    width: 0.5px;
+    background: var(--text-tertiary);
+    opacity: 0.35;
+  }
+
+  .month {
+    position: relative;
+    margin: 2rem 0 1rem;
+    margin-left: -40px; padding-left: 40px;
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 13px; color: var(--text-tertiary);
+    scroll-margin-top: 20px;
+  }
+  .month::before {
+    content: '';
+    position: absolute; left: 2px; top: 50%;
+    transform: translateY(-50%);
+    width: 12px; height: 12px;
+    background: var(--bg-primary);
+    border: 0.5px solid var(--text-tertiary);
+    opacity: 0.5;
+  }
+  .month b {
+    font-family: var(--font-sans); font-style: normal;
+    color: var(--text-primary); font-weight: 500;
+  }
+
+  .event {
+    position: relative;
+    margin: 0 0 1.25rem;
+    padding: 2px 0;
+    transition: transform 0.3s;
+  }
+  .event[data-has-detail="true"] { cursor: pointer; }
+  .event::after {
+    content: ''; position: absolute;
+    left: -25px; top: 16px;
+    width: 18px; height: 0.5px;
+    background: var(--border-light);
+  }
+  .event[data-has-detail="true"]:hover { transform: translateX(3px); }
+
+  .ev-node {
+    position: absolute; left: -36px; top: 8px;
+    width: 14px; height: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; line-height: 1;
+    background: var(--bg-primary); z-index: 2;
+  }
+  .ev-node.sym-read { color: var(--c-read); }
+  .ev-node.sym-done { color: var(--c-done); }
+  .ev-node.sym-aha { color: var(--c-aha); }
+  .ev-node.sym-start { color: var(--c-start); }
+  .ev-node.sym-book { color: var(--c-book); }
+
+  .ev-date {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 11.5px; color: var(--text-tertiary);
+    margin-bottom: 3px;
+  }
+  .ev-title {
+    font-size: 14.5px; line-height: 1.5;
+    color: var(--text-secondary);
+    font-weight: 400;
+    transition: color 0.2s;
+  }
+  .ev-title :global(b) {
+    color: var(--text-primary); font-weight: 500;
+    background: linear-gradient(180deg, transparent 65%, var(--brand-bg-warm) 65%);
+    padding: 0 2px;
+  }
+  .ev-title :global(em) {
+    font-family: var(--font-serif); font-style: italic;
+    color: var(--text-secondary);
+  }
+  .event.aha .ev-title :global(b) {
+    background: linear-gradient(180deg, transparent 55%, var(--brand-bg-warmer) 55%);
+  }
+
+  .ev-expand {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.4s ease, margin 0.3s, padding 0.3s;
+    font-size: 13px; line-height: 1.7;
+    color: var(--text-secondary);
+    font-family: var(--font-serif); font-style: italic;
+  }
+  .event.open .ev-expand {
+    max-height: 300px;
+    margin-top: 8px;
+    padding: 10px 14px;
+    background: var(--brand-bg);
+    border-left: 2px solid #F0997B;
+    border-radius: 2px;
+  }
+  .ev-link {
+    font-family: var(--font-sans); font-style: normal;
+    color: var(--brand);
+    border-bottom: 0.5px solid var(--brand);
+    display: inline-block; margin-top: 6px;
+    font-size: 12px;
+  }
+
+  .now-anchor {
+    position: relative;
+    margin: 2.5rem 0 1.5rem; margin-left: -40px;
+    padding: 14px 16px 14px 40px;
+    background: linear-gradient(90deg, var(--brand-bg-warm) 0%, var(--brand-bg) 70%, transparent 100%);
+    border-radius: 2px;
+  }
+  .now-anchor::before {
+    content: '';
+    position: absolute; left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--brand);
+    box-shadow: 0 0 0 4px rgba(216,90,48,0.2);
+    animation: anchorPulse 2s ease-in-out infinite;
+  }
+  @keyframes anchorPulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(216,90,48,0.18); }
+    50% { box-shadow: 0 0 0 10px rgba(216,90,48,0.05); }
+  }
+  .now-label {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 12px; color: var(--brand-dark);
+    margin-bottom: 4px; letter-spacing: 0.05em;
+  }
+  .now-text {
+    font-size: 15px; color: var(--brand-darker);
+    font-weight: 500; line-height: 1.5;
+  }
+  .now-arrow {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 11.5px; color: var(--brand-dark);
+    opacity: 0.7; margin-top: 4px;
+  }
+
+  .future-label {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 13px; color: var(--text-tertiary);
+    margin: 2rem 0 1rem;
+    margin-left: -40px; padding-left: 40px;
+    position: relative;
+  }
+  .future-label::before {
+    content: '';
+    position: absolute; left: 2px; top: 50%;
+    transform: translateY(-50%);
+    width: 12px; height: 12px;
+    border: 0.5px dashed var(--text-tertiary);
+    border-radius: 50%; opacity: 0.5;
+  }
+  .future-label b {
+    font-family: var(--font-sans); font-style: normal;
+    color: var(--text-secondary); font-weight: 400;
+  }
+
+  .future .event {
+    opacity: 0.65;
+    transition: opacity 0.3s, transform 0.3s;
+    cursor: default;
+  }
+  .future .event:hover { opacity: 1; }
+  .future .event .ev-title {
+    font-family: var(--font-serif); font-style: italic;
+  }
+  .future .event::before { opacity: 0.5; }
+  .future .ev-node { color: var(--text-tertiary); opacity: 0.8; }
+
+  .tail {
+    text-align: center;
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 12px; color: var(--text-tertiary);
+    margin: 1.5rem 0 0 -40px;
+    padding-left: 40px;
+  }
+</style>
+
+<script>
+  (function() {
+    // 点击事件展开
+    const events = document.querySelectorAll<HTMLElement>('.event[data-has-detail="true"]');
+    events.forEach(ev => {
+      ev.addEventListener('click', () => ev.classList.toggle('open'));
+    });
+
+    // 年份导航
+    const yearsNav = document.getElementById('years-nav');
+    if (!yearsNav) return;
+    const yearLinks = yearsNav.querySelectorAll<HTMLAnchorElement>('a[data-year]');
+
+    yearLinks.forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const y = a.getAttribute('data-year');
+        const first = document.querySelector(`.month[data-year="${y}"]`) as HTMLElement | null;
+        if (first) {
+          const top = first.getBoundingClientRect().top + window.scrollY - 20;
+          window.scrollTo({ top, behavior: 'smooth' });
+        }
+      });
+    });
+
+    // 滚动时标记当前年份
+    const monthEls = document.querySelectorAll<HTMLElement>('.month[data-year]');
+    function spy() {
+      const scrollY = window.scrollY + 120;
+      let currentYear: string | null = null;
+      monthEls.forEach(m => {
+        if (m.offsetTop <= scrollY) currentYear = m.getAttribute('data-year');
+      });
+      yearLinks.forEach(a => {
+        a.classList.toggle('current', a.getAttribute('data-year') === currentYear);
+      });
+    }
+    window.addEventListener('scroll', spy, { passive: true });
+    spy();
+  })();
+</script>

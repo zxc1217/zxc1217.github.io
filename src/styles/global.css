@@ -1,0 +1,137 @@
+/* ========================================================
+   全局样式 —— 设计系统
+   ======================================================== */
+
+:root {
+  /* 字体 */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Georgia Pro', Georgia, 'Songti SC', 'Source Han Serif SC', serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Menlo', Consolas, 'Courier New', monospace;
+  --font-script: 'Brush Script MT', 'Segoe Script', cursive;
+
+  /* 主色 —— 温暖橘红 */
+  --brand: #D85A30;
+  --brand-dark: #993C1D;
+  --brand-darker: #4A1B0C;
+  --brand-bg: #FAF7F2;
+  --brand-bg-warm: #FAEEDA;
+  --brand-bg-warmer: #FAC775;
+
+  /* 文本色 */
+  --text-primary: #2C2C2A;
+  --text-secondary: #5F5E5A;
+  --text-tertiary: #888780;
+
+  /* 边框 */
+  --border-light: rgba(0,0,0,0.08);
+  --border-mid: rgba(0,0,0,0.15);
+  --border-soft: rgba(0,0,0,0.04);
+
+  /* 背景 */
+  --bg-primary: #FFFEFB;
+  --bg-secondary: #FAF7F2;
+  --bg-paper: #F7F3EB;
+
+  /* 语义色 */
+  --c-read: #185FA5;
+  --c-done: #0F6E56;
+  --c-aha: #D85A30;
+  --c-start: #854F0B;
+  --c-book: #993556;
+}
+
+/* ========== 重置 ========== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4, h5, h6, p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; padding: 0; color: inherit; }
+img { max-width: 100%; display: block; }
+
+/* ========== 滚动条 ========== */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* ========== 选中文字 ========== */
+::selection { background: var(--brand-bg-warm); color: var(--brand-darker); }
+
+/* ========== 顶部导航 ========== */
+.nav-top {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+  text-align: center;
+  padding: 1.5rem 1rem 0;
+  margin-bottom: 3rem;
+}
+.nav-top a {
+  color: inherit;
+  margin: 0 6px;
+  padding: 2px 0;
+  position: relative;
+  cursor: pointer;
+  transition: color 0.3s;
+  display: inline-block;
+}
+.nav-top a::after {
+  content: '';
+  position: absolute; left: 50%; bottom: 0;
+  width: 0; height: 1px; background: currentColor;
+  transition: width 0.3s ease, left 0.3s ease;
+}
+.nav-top a:hover { color: var(--text-primary); }
+.nav-top a:hover::after { width: 100%; left: 0; }
+.nav-top a.active { color: var(--text-primary); font-weight: 500; }
+.nav-top .sep { margin: 0; user-select: none; }
+
+/* ========== 页脚 ========== */
+.site-foot {
+  margin-top: 4rem;
+  padding: 1.5rem 1rem 2rem;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  font-family: var(--font-serif);
+  font-style: italic;
+  text-align: center;
+}
+.site-foot .heart {
+  color: var(--brand);
+  display: inline-block;
+  animation: heartbeat 1.6s ease-in-out infinite;
+}
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}
+
+/* ========== 页面淡入 ========== */
+.fade-up { opacity: 0; animation: fadeUp 0.7s ease-out forwards; }
+.fade-up.d1 { animation-delay: 0.1s; }
+.fade-up.d2 { animation-delay: 0.25s; }
+.fade-up.d3 { animation-delay: 0.4s; }
+.fade-up.d4 { animation-delay: 1.4s; }
+.fade-up.d5 { animation-delay: 1.6s; }
+.fade-up.d6 { animation-delay: 1.8s; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== 尊重用户动效偏好 ========== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,256 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, SAY_HI } from '../config';
+---
+
+<BaseLayout title="Say hi" activeNav="say hi">
+  <div class="sh">
+    <!-- 明信片 -->
+    <div class="card fade-up d1">
+      <div class="stamp">
+        EST.<br/><b>{SAY_HI.stampYear}</b>from {SITE.author}
+      </div>
+
+      <div class="card-kicker">{SAY_HI.kicker}</div>
+      <h1 class="card-title" set:html={SAY_HI.title} />
+
+      <div class="body">
+        {SAY_HI.body.map(p => (<p set:html={p} />))}
+        <div class="reply-badge">
+          <span class="reply-dot"></span>
+          <span>平均回复时间：{SAY_HI.replyTime}</span>
+        </div>
+      </div>
+
+      <!-- 联系方式 -->
+      <div class="contacts">
+        {SAY_HI.contacts.map(c => (
+          c.copy ? (
+            <a class="row" data-copy={c.value} data-type="copy">
+              <span class="row-label">{c.label}</span>
+              <span class="row-value">{c.value}</span>
+              <span class="row-arrow">{c.hint}</span>
+            </a>
+          ) : (
+            <a class="row" href={c.href} target="_blank" rel="noopener">
+              <span class="row-label">{c.label}</span>
+              <span class="row-value">{c.value}</span>
+              <span class="row-arrow">{c.hint}</span>
+            </a>
+          )
+        ))}
+      </div>
+
+      <div class="sign">— 等你来信，<span class="sign-name">{SITE.author}</span></div>
+    </div>
+
+    <div class="ps fade-up d2">
+      <span class="ps-cycle" id="ps-cycle">{SAY_HI.ps[0]}</span>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .sh {
+    max-width: 520px; margin: 0 auto;
+    padding: 0 1rem; font-family: var(--font-sans);
+    text-align: center; position: relative;
+  }
+
+  .card {
+    position: relative;
+    background: var(--brand-bg);
+    border: 0.5px solid #E8DFD1;
+    padding: 2.5rem 2rem 2.25rem;
+    max-width: 440px;
+    margin: 0 auto;
+    transform: rotate(-0.4deg);
+    transition: transform 0.5s cubic-bezier(.34,1.56,.64,1);
+  }
+  .card:hover { transform: rotate(0deg); }
+
+  .stamp {
+    position: absolute; top: -18px; right: 24px;
+    width: 68px; height: 68px;
+    border: 1.5px solid var(--brand-dark);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transform: rotate(8deg);
+    background: var(--brand-bg);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 9.5px;
+    color: var(--brand-dark);
+    line-height: 1.25; text-align: center;
+    padding: 4px; letter-spacing: 0.03em;
+  }
+  .stamp b {
+    display: block;
+    font-family: var(--font-sans); font-style: normal;
+    font-weight: 500; font-size: 12px;
+    margin: 2px 0 1px; letter-spacing: 0.04em;
+  }
+
+  .card-kicker {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 13px; color: var(--text-tertiary);
+    margin-bottom: 10px; letter-spacing: 0.04em;
+  }
+  .card-title {
+    font-size: 30px; font-weight: 500;
+    letter-spacing: -0.02em; margin: 0 0 1.5rem;
+  }
+  .card-title :global(em) {
+    font-family: var(--font-serif); font-style: italic; font-weight: 400;
+  }
+
+  .body {
+    text-align: left;
+    font-size: 14.5px; line-height: 1.85;
+    color: var(--text-secondary);
+    max-width: 360px;
+    margin: 0 auto 1.75rem;
+  }
+  .body :global(p) { margin: 0 0 0.9rem; }
+  .body :global(b) { color: var(--text-primary); font-weight: 500; }
+  .body :global(.soft) {
+    font-family: var(--font-serif); font-style: italic;
+    color: var(--text-tertiary); font-size: 13.5px;
+  }
+
+  .reply-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--text-tertiary);
+    font-family: var(--font-serif); font-style: italic;
+    margin-top: 8px;
+  }
+  .reply-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #639922; display: inline-block;
+    animation: replyPulse 2s ease-in-out infinite;
+  }
+  @keyframes replyPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .contacts {
+    border-top: 0.5px dashed #D3C9B5;
+    padding-top: 1.5rem;
+    display: flex; flex-direction: column; gap: 10px;
+    max-width: 320px; margin: 0 auto;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 70px 1fr auto;
+    gap: 14px; align-items: center;
+    padding: 8px 10px; font-size: 13px;
+    border-radius: 2px;
+    transition: background 0.25s, padding 0.25s;
+    cursor: pointer;
+    color: inherit;
+  }
+  .row:hover {
+    background: rgba(216,90,48,0.06);
+    padding-left: 14px;
+  }
+  .row-label {
+    font-family: var(--font-serif); font-style: italic;
+    color: var(--text-tertiary); font-size: 12.5px;
+    text-align: right;
+  }
+  .row-value {
+    color: var(--text-primary);
+    font-family: var(--font-mono); font-size: 13px;
+    text-align: left;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    transition: color 0.2s;
+  }
+  .row:hover .row-value { color: var(--brand); }
+  .row-arrow {
+    font-size: 11px; color: var(--text-tertiary);
+    font-family: var(--font-serif); font-style: italic;
+    opacity: 0; transform: translateX(-4px);
+    transition: opacity 0.25s, transform 0.25s;
+  }
+  .row:hover .row-arrow { opacity: 1; transform: translateX(0); color: var(--brand); }
+  .row-arrow.copied { opacity: 1; transform: translateX(0); color: #0F6E56; }
+
+  .sign {
+    text-align: right; margin-top: 1.75rem;
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 14px; color: var(--text-secondary);
+  }
+  .sign-name {
+    font-family: var(--font-script); font-style: normal;
+    font-size: 22px; color: var(--text-primary);
+    display: inline-block; transform: rotate(-2deg);
+    margin-left: 4px;
+  }
+
+  .ps {
+    max-width: 380px; margin: 2.5rem auto 0;
+    text-align: left;
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 13px; line-height: 1.8;
+    color: var(--text-tertiary);
+    padding: 0 1.5rem; position: relative;
+  }
+  .ps::before {
+    content: 'P.S.';
+    position: absolute; left: 0; top: 0;
+    font-family: var(--font-sans); font-style: normal;
+    font-weight: 500; color: var(--text-secondary);
+    font-size: 11px; letter-spacing: 0.08em;
+  }
+  .ps-cycle {
+    display: inline-block;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-bottom: 0.5px dashed var(--text-tertiary);
+    padding-bottom: 1px;
+    transition: color 0.3s, border-color 0.3s, opacity 0.25s;
+  }
+  .ps-cycle:hover { color: var(--brand); border-color: var(--brand); }
+</style>
+
+<script define:vars={{ messages: SAY_HI.ps }}>
+  (function() {
+    // 复制邮箱
+    const copyRows = document.querySelectorAll('.row[data-type="copy"]');
+    copyRows.forEach(row => {
+      row.addEventListener('click', e => {
+        e.preventDefault();
+        const text = row.getAttribute('data-copy');
+        const arrow = row.querySelector('.row-arrow');
+        if (!text || !arrow) return;
+        const orig = arrow.textContent ?? '';
+        navigator.clipboard.writeText(text).then(() => {
+          arrow.textContent = '✓ 已复制';
+          arrow.classList.add('copied');
+          setTimeout(() => {
+            arrow.textContent = orig;
+            arrow.classList.remove('copied');
+          }, 1600);
+        }).catch(() => {
+          arrow.textContent = '复制失败';
+          setTimeout(() => { arrow.textContent = orig; }, 1600);
+        });
+      });
+    });
+
+    // P.S. 循环
+    const cycle = document.getElementById('ps-cycle');
+    let idx = 0;
+    if (cycle && messages.length > 0) {
+      cycle.addEventListener('click', () => {
+        idx = (idx + 1) % messages.length;
+        cycle.style.opacity = '0';
+        setTimeout(() => {
+          cycle.textContent = messages[idx];
+          cycle.style.opacity = '1';
+        }, 200);
+      });
+    }
+  })();
+</script>

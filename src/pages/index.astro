@@ -1,0 +1,440 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Avatar from '../components/Avatar.astro';
+import { SITE, HOME } from '../config';
+import { getCollection } from 'astro:content';
+
+// 取所有非草稿文章，按日期倒序
+const allPosts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+// 标签计数
+const tagCount: Record<string, number> = {};
+allPosts.forEach(p => {
+  tagCount[p.data.tag] = (tagCount[p.data.tag] || 0) + 1;
+});
+const tags = Object.entries(tagCount)
+  .sort((a, b) => b[1] - a[1]);
+const maxCount = Math.max(...tags.map(t => t[1]), 1);
+
+// 字号档：根据文章数量分 4 档
+function sizeClass(count: number) {
+  const ratio = count / maxCount;
+  if (ratio >= 0.75) return 's4';
+  if (ratio >= 0.5) return 's3';
+  if (ratio >= 0.25) return 's2';
+  return 's1';
+}
+
+// 中文日期格式："四月十五日，周三"
+const zhNum = ['零','一','二','三','四','五','六','七','八','九','十'];
+const zhWeek = ['周日','周一','周二','周三','周四','周五','周六'];
+function zhDay(n: number): string {
+  if (n <= 10) return zhNum[n] + '日';
+  if (n < 20) return '十' + (n === 10 ? '' : zhNum[n - 10]) + '日';
+  if (n === 20) return '二十日';
+  if (n < 30) return '二十' + zhNum[n - 20] + '日';
+  if (n === 30) return '三十日';
+  return '三十一日';
+}
+function zhMonth(m: number): string {
+  return zhNum[m] + '月';
+}
+function formatDate(d: Date, mood?: string): string {
+  const m = zhMonth(d.getMonth() + 1);
+  const day = zhDay(d.getDate());
+  const w = zhWeek[d.getDay()];
+  return `${m}${day}，${w}${mood ? '，' + mood : ''}`;
+}
+---
+
+<BaseLayout activeNav="homepage">
+  <div class="home">
+
+    <Avatar />
+
+    <p class="hi fade-up d2">Hi, I'm here — <span class="wave">👋</span></p>
+
+    <h1 class="title fade-up d3">
+      <Fragment set:html={HOME.titleLine1} />
+      <br/>
+      <span class="strike">{HOME.titleStrikeWord}</span> {HOME.titleLine2}
+    </h1>
+
+    <div class="intro fade-up d4">
+      {HOME.intro.map(p => (<p set:html={p} />))}
+    </div>
+    <div class="sign fade-up d4">— <span class="sign-name">{SITE.author}</span></div>
+
+    <!-- 手绘波浪分割线 -->
+    <div class="divider">
+      <svg viewBox="0 0 80 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M 2 7 Q 10 2 20 7 T 40 7 T 60 7 T 78 7" fill="none" stroke="#2C2C2A" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <!-- Now 板块 -->
+    <div class="now fade-up d5">
+      <div class="now-label"><span class="pin"></span>Now — 此刻我在做什么</div>
+      <p class="now-body">在啃 <b>{HOME.nowTopic}</b>。{HOME.nowDetail}</p>
+      <div class="now-time">— 更新于{HOME.nowUpdated}</div>
+    </div>
+
+    <!-- 标签字云 -->
+    <div class="tagsec fade-up d6">
+      <p class="tagintro">
+        {HOME.tagIntro}
+        <br/>
+        点一个 <b id="tag-hint">{HOME.tagHint}</b>
+        <a class="reset" id="tag-reset">清除筛选 ×</a>
+      </p>
+      <div class="cloud" id="tag-cloud">
+        {tags.map(([tag, count]) => (
+          <a data-tag={tag} class={sizeClass(count)}>
+            {tag}<span class="count">{count}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <div class="sec-label fade-up d6" id="sec-label">最近写的东西</div>
+
+    <div class="posts fade-up d6" id="posts">
+      {allPosts.map(post => (
+        <a class="post" data-tag={post.data.tag} href={`/writing/${post.slug}/`}>
+          <div class="post-date">{formatDate(post.data.date, post.data.mood)}</div>
+          <h3 class="post-title">{post.data.title}</h3>
+          {post.data.note && <p class="post-note">{post.data.note}</p>}
+          <div class="post-tag"><b>{post.data.tag}</b>{post.data.readTime ? ` · ${post.data.readTime} 分钟` : ''}</div>
+        </a>
+      ))}
+      <div class="empty" id="posts-empty">
+        这个标签下还没有文章，<br/>或者还没写出来 ——
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .home {
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    text-align: center;
+    font-family: var(--font-sans);
+  }
+
+  .hi { font-family: var(--font-serif); font-style: italic; font-size: 17px; color: var(--text-secondary); margin: 0 0 14px; }
+  .wave {
+    display: inline-block;
+    transform-origin: 70% 80%;
+    animation: wave 2.8s ease-in-out infinite;
+    animation-delay: 0.6s;
+  }
+  @keyframes wave {
+    0%, 60%, 100% { transform: rotate(0deg); }
+    65% { transform: rotate(18deg); }
+    70% { transform: rotate(-12deg); }
+    75% { transform: rotate(16deg); }
+    80% { transform: rotate(-10deg); }
+    85% { transform: rotate(12deg); }
+    90% { transform: rotate(0deg); }
+  }
+
+  .title {
+    font-size: 34px; line-height: 1.25; font-weight: 500;
+    letter-spacing: -0.025em; margin: 0 0 1.5rem;
+  }
+  .title :global(em) {
+    font-family: var(--font-serif); font-style: italic; font-weight: 400;
+  }
+  .strike {
+    position: relative; color: var(--text-tertiary);
+    font-weight: 400; font-size: 26px; display: inline-block;
+  }
+  .strike::after {
+    content: ''; position: absolute;
+    top: 52%; left: -4%; width: 0; height: 1.5px;
+    background: var(--text-tertiary);
+    animation: strikeIn 1.2s cubic-bezier(.7,0,.3,1) 0.8s forwards;
+  }
+  @keyframes strikeIn { to { width: 108%; } }
+
+  .intro {
+    font-size: 15px; line-height: 1.8;
+    color: var(--text-secondary);
+    margin: 0 auto 1rem; max-width: 440px;
+    text-align: left;
+  }
+  .intro :global(p) { margin: 0 0 0.75rem; }
+  .intro :global(p:last-child) { margin: 0; }
+  .intro :global(b) { color: var(--text-primary); font-weight: 500; }
+
+  .sign { font-family: var(--font-serif); font-style: italic; font-size: 15px; color: var(--text-secondary); margin: 1.5rem 0 0; }
+  .sign-name {
+    display: inline-block; font-family: var(--font-script); font-style: normal;
+    font-size: 22px; color: var(--text-primary);
+    transform: rotate(-2deg); margin-left: 6px;
+  }
+
+  .divider {
+    margin: 3rem auto; width: 80px; height: 14px; opacity: 0.45;
+  }
+  .divider :global(path) {
+    stroke-dasharray: 90; stroke-dashoffset: 90;
+    animation: drawLine 1.4s ease-out 1.4s forwards;
+  }
+  @keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+  .now {
+    text-align: left;
+    max-width: 440px;
+    margin: 0 auto 3rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--brand-bg);
+    border-radius: 2px;
+    border-left: 3px solid var(--brand);
+    transition: transform 0.3s ease;
+  }
+  .now:hover { transform: translateX(3px); }
+  .now-label {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 13px; color: var(--brand-dark); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pin {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--brand);
+    position: relative;
+  }
+  .pin::after {
+    content: ''; position: absolute; inset: 0;
+    border-radius: 50%; background: var(--brand);
+    animation: pulseRing 2s ease-out infinite;
+  }
+  @keyframes pulseRing {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(3); opacity: 0; }
+  }
+  .now-body {
+    font-size: 14px; line-height: 1.75;
+    color: var(--brand-darker); margin: 0;
+  }
+  .now-body :global(b) { font-weight: 500; }
+  .now-time {
+    font-size: 11px; color: var(--brand-dark);
+    margin-top: 10px; opacity: 0.7;
+  }
+
+  /* 标签字云 */
+  .tagsec { max-width: 460px; margin: 0 auto 2.5rem; }
+  .tagintro {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 14px; color: var(--text-secondary);
+    margin-bottom: 1rem; line-height: 1.6;
+  }
+  .tagintro b {
+    font-weight: 500; color: var(--text-primary);
+    cursor: pointer; border-bottom: 0.5px dashed var(--text-tertiary);
+    transition: color 0.2s, border-color 0.2s, opacity 0.3s;
+  }
+  .tagintro b:hover { color: var(--brand); border-color: var(--brand); }
+  .tagintro .reset {
+    display: inline-block; margin-left: 6px;
+    color: var(--text-tertiary); font-size: 12px;
+    cursor: pointer; opacity: 0; transform: translateX(-6px);
+    transition: opacity 0.3s, transform 0.3s, color 0.2s;
+    font-style: italic;
+  }
+  .tagintro .reset.show { opacity: 1; transform: translateX(0); }
+  .tagintro .reset:hover { color: var(--brand); }
+
+  .cloud {
+    display: flex; flex-wrap: wrap;
+    gap: 4px 14px; align-items: baseline;
+    justify-content: center; line-height: 2.2; padding: 0 8px;
+  }
+  .cloud a {
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-serif); font-style: italic;
+    transition: color 0.25s, transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+    display: inline-block; position: relative;
+  }
+  .cloud a:hover { color: var(--brand); transform: translateY(-2px); }
+  .cloud a.active { color: var(--brand); font-weight: 500; }
+  .cloud a.active::after {
+    content: ''; position: absolute;
+    bottom: -3px; left: 0; right: 0;
+    height: 1.5px; background: var(--brand);
+    animation: drawUnder 0.4s ease-out forwards;
+    transform-origin: left;
+  }
+  @keyframes drawUnder {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  .cloud a.dimmed { opacity: 0.28; }
+  .cloud a.s1 { font-size: 13px; }
+  .cloud a.s2 { font-size: 15px; }
+  .cloud a.s3 { font-size: 18px; font-weight: 500; }
+  .cloud a.s4 { font-size: 22px; font-weight: 500; color: var(--text-primary); }
+  .cloud a.s4.dimmed { color: var(--text-secondary); }
+  .count {
+    font-family: var(--font-sans); font-style: normal;
+    font-size: 9.5px; color: var(--text-tertiary);
+    vertical-align: super; margin-left: 2px; font-weight: 400;
+  }
+
+  .sec-label {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 16px; color: var(--text-secondary);
+    margin: 2rem 0 1.25rem; display: inline-block;
+  }
+  .sec-label::before {
+    content: '—'; margin-right: 10px; color: var(--text-tertiary);
+  }
+  .sec-label::after {
+    content: '—'; margin-left: 10px; color: var(--text-tertiary);
+  }
+  .sec-label :global(em) {
+    font-family: inherit; color: var(--brand);
+    font-style: italic; font-weight: 500;
+  }
+
+  .posts {
+    text-align: left;
+    max-width: 440px; margin: 0 auto;
+    min-height: 180px;
+  }
+  .post {
+    display: block;
+    padding: 1.25rem 4px;
+    border-bottom: 1px dashed var(--border-light);
+    position: relative;
+    cursor: pointer;
+    transition: padding 0.3s cubic-bezier(.2,.8,.2,1), background 0.3s, opacity 0.4s, transform 0.4s, max-height 0.5s;
+    border-radius: 2px;
+    overflow: hidden;
+    max-height: 200px;
+    color: inherit;
+  }
+  .post::before {
+    content: '→';
+    position: absolute; left: -18px; top: 50%;
+    transform: translateY(-50%) translateX(-4px);
+    color: var(--text-tertiary); opacity: 0;
+    transition: opacity 0.3s, transform 0.3s cubic-bezier(.34,1.56,.64,1);
+    font-size: 14px;
+  }
+  .post:hover { padding-left: 12px; }
+  .post:hover::before { opacity: 1; transform: translateY(-50%) translateX(0); left: -4px; }
+  .post.hidden {
+    opacity: 0; transform: translateY(-6px);
+    max-height: 0; padding: 0; border: none;
+    pointer-events: none;
+  }
+  .post-date {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 12px; color: var(--text-tertiary);
+    margin-bottom: 4px;
+  }
+  .post-title {
+    font-size: 16px; line-height: 1.45;
+    margin: 0 0 6px; font-weight: 500;
+    letter-spacing: -0.005em; transition: color 0.2s;
+  }
+  .post:hover .post-title { color: var(--brand); }
+  .post-note {
+    font-size: 13px; line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 0 0 6px;
+    font-family: var(--font-serif); font-style: italic;
+  }
+  .post-tag { font-size: 11px; color: var(--text-tertiary); }
+  .post-tag b {
+    color: var(--text-secondary); font-weight: 400;
+    background: var(--brand-bg-warm);
+    padding: 1px 7px; border-radius: 2px;
+    transition: background 0.3s;
+  }
+  .post:hover .post-tag b { background: var(--brand-bg-warmer); }
+
+  .empty {
+    text-align: center; padding: 1.5rem;
+    font-family: var(--font-serif); font-style: italic;
+    color: var(--text-tertiary); font-size: 14px; line-height: 1.7;
+    display: none; opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .empty.show { display: block; opacity: 1; }
+</style>
+
+<script>
+  (function() {
+    const cloud = document.getElementById('tag-cloud');
+    const posts = document.getElementById('posts');
+    const reset = document.getElementById('tag-reset');
+    const label = document.getElementById('sec-label');
+    const empty = document.getElementById('posts-empty');
+    const hint = document.getElementById('tag-hint');
+    if (!cloud || !posts || !reset || !label || !empty) return;
+
+    const tagLinks = cloud.querySelectorAll('a[data-tag]');
+    const postEls = posts.querySelectorAll<HTMLElement>('.post');
+    let active: string | null = null;
+
+    function applyFilter(tag: string | null) {
+      active = tag;
+
+      tagLinks.forEach(l => {
+        const t = l.getAttribute('data-tag');
+        if (!tag) {
+          l.classList.remove('active', 'dimmed');
+        } else if (t === tag) {
+          l.classList.add('active');
+          l.classList.remove('dimmed');
+        } else {
+          l.classList.add('dimmed');
+          l.classList.remove('active');
+        }
+      });
+
+      let visible = 0;
+      postEls.forEach(p => {
+        if (!tag || p.getAttribute('data-tag') === tag) {
+          p.classList.remove('hidden');
+          visible++;
+        } else {
+          p.classList.add('hidden');
+        }
+      });
+
+      if (tag && visible === 0) empty!.classList.add('show');
+      else empty!.classList.remove('show');
+
+      if (tag) {
+        label!.innerHTML = '关于 <em>' + tag + '</em> 的文字';
+        reset!.classList.add('show');
+        if (hint) hint.style.opacity = '0.3';
+      } else {
+        label!.innerHTML = '最近写的东西';
+        reset!.classList.remove('show');
+        if (hint) hint.style.opacity = '1';
+      }
+    }
+
+    tagLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tag = link.getAttribute('data-tag');
+        applyFilter(active === tag ? null : tag);
+      });
+    });
+
+    reset.addEventListener('click', (e) => {
+      e.preventDefault();
+      applyFilter(null);
+    });
+  })();
+</script>

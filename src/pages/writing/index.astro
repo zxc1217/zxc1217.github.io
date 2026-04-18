@@ -1,0 +1,300 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const allPosts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const tagCount: Record<string, number> = {};
+allPosts.forEach(p => {
+  tagCount[p.data.tag] = (tagCount[p.data.tag] || 0) + 1;
+});
+const tags = Object.entries(tagCount).sort((a, b) => b[1] - a[1]);
+const maxCount = Math.max(...tags.map(t => t[1]), 1);
+
+function sizeClass(count: number) {
+  const ratio = count / maxCount;
+  if (ratio >= 0.75) return 's4';
+  if (ratio >= 0.5) return 's3';
+  if (ratio >= 0.25) return 's2';
+  return 's1';
+}
+
+const zhNum = ['零','一','二','三','四','五','六','七','八','九','十'];
+const zhWeek = ['周日','周一','周二','周三','周四','周五','周六'];
+function zhDay(n: number): string {
+  if (n <= 10) return zhNum[n] + '日';
+  if (n < 20) return '十' + (n === 10 ? '' : zhNum[n - 10]) + '日';
+  if (n === 20) return '二十日';
+  if (n < 30) return '二十' + zhNum[n - 20] + '日';
+  if (n === 30) return '三十日';
+  return '三十一日';
+}
+function zhMonth(m: number): string { return zhNum[m] + '月'; }
+function formatDate(d: Date, mood?: string): string {
+  const m = zhMonth(d.getMonth() + 1);
+  const day = zhDay(d.getDate());
+  const w = zhWeek[d.getDay()];
+  return `${m}${day}，${w}${mood ? '，' + mood : ''}`;
+}
+
+// 按年份分组
+type PostGroup = { year: number; posts: typeof allPosts };
+const groups: PostGroup[] = [];
+allPosts.forEach(p => {
+  const year = p.data.date.getFullYear();
+  const g = groups.find(x => x.year === year);
+  if (g) g.posts.push(p);
+  else groups.push({ year, posts: [p] });
+});
+---
+
+<BaseLayout title="Writing" activeNav="writing">
+  <div class="writing">
+    <header class="head fade-up d1">
+      <div class="kicker">All writing</div>
+      <h1 class="title">我写过的<em>东西</em></h1>
+      <p class="sub">一共 {allPosts.length} 篇，按时间倒序。</p>
+    </header>
+
+    <div class="tagsec fade-up d2">
+      <p class="tagintro">
+        按主题筛选 ——
+        <a class="reset" id="tag-reset">清除 ×</a>
+      </p>
+      <div class="cloud" id="tag-cloud">
+        {tags.map(([tag, count]) => (
+          <a data-tag={tag} class={sizeClass(count)}>
+            {tag}<span class="count">{count}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <div class="groups fade-up d3" id="groups">
+      {groups.map(g => (
+        <div class="group" data-year={g.year}>
+          <div class="group-year">{g.year}</div>
+          <div class="group-posts">
+            {g.posts.map(post => (
+              <a class="post" data-tag={post.data.tag} href={`/writing/${post.slug}/`}>
+                <div class="post-date">{formatDate(post.data.date, post.data.mood)}</div>
+                <h3 class="post-title">{post.data.title}</h3>
+                {post.data.note && <p class="post-note">{post.data.note}</p>}
+                <div class="post-tag"><b>{post.data.tag}</b>{post.data.readTime ? ` · ${post.data.readTime} 分钟` : ''}</div>
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div class="empty" id="posts-empty">
+        这个标签下暂时没有文章 ——
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .writing {
+    max-width: 540px; margin: 0 auto;
+    padding: 0 1rem; font-family: var(--font-sans);
+  }
+
+  .head { text-align: center; margin-bottom: 3rem; }
+  .kicker {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 13px; color: var(--text-tertiary);
+    margin-bottom: 12px;
+  }
+  .title {
+    font-size: 30px; line-height: 1.25; font-weight: 500;
+    letter-spacing: -0.025em; margin: 0 0 12px;
+  }
+  .title :global(em) {
+    font-family: var(--font-serif); font-style: italic; font-weight: 400;
+  }
+  .sub {
+    font-size: 13.5px; color: var(--text-tertiary);
+    font-family: var(--font-serif); font-style: italic;
+  }
+
+  .tagsec { max-width: 460px; margin: 0 auto 3rem; text-align: center; }
+  .tagintro {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 13.5px; color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+  .reset {
+    display: inline-block; margin-left: 6px;
+    color: var(--text-tertiary); font-size: 11.5px;
+    cursor: pointer; opacity: 0; transform: translateX(-6px);
+    transition: opacity 0.3s, transform 0.3s, color 0.2s;
+  }
+  .reset.show { opacity: 1; transform: translateX(0); }
+  .reset:hover { color: var(--brand); }
+  .cloud {
+    display: flex; flex-wrap: wrap;
+    gap: 4px 14px; align-items: baseline;
+    justify-content: center; line-height: 2.2;
+  }
+  .cloud a {
+    color: var(--text-secondary); cursor: pointer;
+    font-family: var(--font-serif); font-style: italic;
+    transition: color 0.25s, transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+    display: inline-block; position: relative;
+  }
+  .cloud a:hover { color: var(--brand); transform: translateY(-2px); }
+  .cloud a.active { color: var(--brand); font-weight: 500; }
+  .cloud a.active::after {
+    content: ''; position: absolute;
+    bottom: -3px; left: 0; right: 0;
+    height: 1.5px; background: var(--brand);
+    animation: drawUnder 0.4s ease-out forwards;
+    transform-origin: left;
+  }
+  @keyframes drawUnder {
+    from { transform: scaleX(0); } to { transform: scaleX(1); }
+  }
+  .cloud a.dimmed { opacity: 0.28; }
+  .cloud a.s1 { font-size: 13px; }
+  .cloud a.s2 { font-size: 15px; }
+  .cloud a.s3 { font-size: 18px; font-weight: 500; }
+  .cloud a.s4 { font-size: 22px; font-weight: 500; color: var(--text-primary); }
+  .cloud a.s4.dimmed { color: var(--text-secondary); }
+  .count {
+    font-family: var(--font-sans); font-style: normal;
+    font-size: 9.5px; color: var(--text-tertiary);
+    vertical-align: super; margin-left: 2px; font-weight: 400;
+  }
+
+  .groups { max-width: 440px; margin: 0 auto; }
+  .group { margin-bottom: 2.5rem; }
+  .group.hidden-year { display: none; }
+  .group-year {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 14px; color: var(--text-tertiary);
+    margin-bottom: 0.75rem; padding-bottom: 0.5rem;
+    border-bottom: 0.5px solid var(--border-light);
+  }
+
+  .post {
+    display: block;
+    padding: 1.25rem 4px;
+    border-bottom: 1px dashed var(--border-light);
+    position: relative;
+    cursor: pointer;
+    transition: padding 0.3s cubic-bezier(.2,.8,.2,1), opacity 0.4s, transform 0.4s, max-height 0.5s;
+    border-radius: 2px;
+    overflow: hidden;
+    max-height: 200px;
+    color: inherit;
+  }
+  .post::before {
+    content: '→'; position: absolute;
+    left: -18px; top: 50%;
+    transform: translateY(-50%) translateX(-4px);
+    color: var(--text-tertiary); opacity: 0;
+    transition: opacity 0.3s, transform 0.3s cubic-bezier(.34,1.56,.64,1);
+    font-size: 14px;
+  }
+  .post:hover { padding-left: 12px; }
+  .post:hover::before { opacity: 1; transform: translateY(-50%) translateX(0); left: -4px; }
+  .post.hidden {
+    opacity: 0; transform: translateY(-6px);
+    max-height: 0; padding: 0; border: none;
+    pointer-events: none;
+  }
+  .post-date {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;
+  }
+  .post-title {
+    font-size: 16px; line-height: 1.45;
+    margin: 0 0 6px; font-weight: 500;
+    letter-spacing: -0.005em; transition: color 0.2s;
+  }
+  .post:hover .post-title { color: var(--brand); }
+  .post-note {
+    font-size: 13px; line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 0 0 6px;
+    font-family: var(--font-serif); font-style: italic;
+  }
+  .post-tag { font-size: 11px; color: var(--text-tertiary); }
+  .post-tag b {
+    color: var(--text-secondary); font-weight: 400;
+    background: var(--brand-bg-warm);
+    padding: 1px 7px; border-radius: 2px;
+    transition: background 0.3s;
+  }
+  .post:hover .post-tag b { background: var(--brand-bg-warmer); }
+
+  .empty {
+    text-align: center; padding: 2rem 1rem;
+    font-family: var(--font-serif); font-style: italic;
+    color: var(--text-tertiary); font-size: 14px;
+    display: none;
+  }
+  .empty.show { display: block; }
+</style>
+
+<script>
+  (function() {
+    const cloud = document.getElementById('tag-cloud');
+    const groups = document.getElementById('groups');
+    const reset = document.getElementById('tag-reset');
+    const empty = document.getElementById('posts-empty');
+    if (!cloud || !groups || !reset || !empty) return;
+
+    const tagLinks = cloud.querySelectorAll('a[data-tag]');
+    const postEls = groups.querySelectorAll<HTMLElement>('.post');
+    const groupEls = groups.querySelectorAll<HTMLElement>('.group');
+    let active: string | null = null;
+
+    function applyFilter(tag: string | null) {
+      active = tag;
+
+      tagLinks.forEach(l => {
+        const t = l.getAttribute('data-tag');
+        if (!tag) l.classList.remove('active', 'dimmed');
+        else if (t === tag) { l.classList.add('active'); l.classList.remove('dimmed'); }
+        else { l.classList.add('dimmed'); l.classList.remove('active'); }
+      });
+
+      let visible = 0;
+      postEls.forEach(p => {
+        if (!tag || p.getAttribute('data-tag') === tag) {
+          p.classList.remove('hidden');
+          visible++;
+        } else {
+          p.classList.add('hidden');
+        }
+      });
+
+      // 如果某年份下所有文章都隐藏，整个年份组也隐藏
+      groupEls.forEach(g => {
+        const postsInGroup = g.querySelectorAll('.post');
+        const visibleInGroup = Array.from(postsInGroup).filter(p => !p.classList.contains('hidden')).length;
+        g.classList.toggle('hidden-year', visibleInGroup === 0);
+      });
+
+      if (tag && visible === 0) empty!.classList.add('show');
+      else empty!.classList.remove('show');
+
+      if (tag) reset!.classList.add('show');
+      else reset!.classList.remove('show');
+    }
+
+    tagLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tag = link.getAttribute('data-tag');
+        applyFilter(active === tag ? null : tag);
+      });
+    });
+    reset.addEventListener('click', (e) => {
+      e.preventDefault();
+      applyFilter(null);
+    });
+  })();
+</script>
